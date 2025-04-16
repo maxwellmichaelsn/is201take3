@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Color Guessing Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f0f0;
+    }
+
+    #colorBox {
+      width: 300px;
+      height: 150px;
+      margin: 20px auto;
+      border: 3px solid #333;
+      border-radius: 10px;
+    }
+
+    #colorPickerContainer {
+      margin-top: 20px;
+    }
+
+    input[type="color"] {
+      padding: 5px;
+      width: 80px;
+      height: 40px;
+      border: none;
+      margin-bottom: 5px;
+    }
+
+    .color-label {
+      font-size: 16px;
+      margin-bottom: 15px;
+      display: block;
+    }
+
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      margin: 10px;
+    }
+
+    #feedback, #hint, #guessesLeft {
+      margin-top: 10px;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Guess the Color!</h1>
+  <p>Use the color picker to match the color shown. You have 5 tries!</p>
+
+  <div id="colorBox"></div>
+
+  <div id="colorPickerContainer">
+    <input type="color" id="colorInput">
+    <label for="colorInput" class="color-label">Pick a color!</label>
+  </div>
+
+  <button onclick="makeGuess()">Guess</button>
+  <button onclick="resetGame()">Reset</button>
+
+  <div id="feedback"></div>
+  <div id="hint"></div>
+  <div id="guessesLeft"></div>
+
+  <script>
+    let targetColor, targetRgb, tries, lastDistance;
+
+    function getRandomColor() {
+      const r = Math.floor(Math.random() * 256);
+      const g = Math.floor(Math.random() * 256);
+      const b = Math.floor(Math.random() * 256);
+      return rgbToHex(r, g, b);
+    }
+
+    function rgbToHex(r, g, b) {
+      return "#" + [r, g, b].map(x =>
+        x.toString(16).padStart(2, "0")
+      ).join("").toUpperCase();
+    }
+
+    function hexToRgb(hex) {
+      hex = hex.replace("#", "");
+      const bigint = parseInt(hex, 16);
+      return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+      };
+    }
+
+    function colorDistance(c1, c2) {
+      return Math.sqrt(
+        Math.pow(c1.r - c2.r, 2) +
+        Math.pow(c1.g - c2.g, 2) +
+        Math.pow(c1.b - c2.b, 2)
+      );
+    }
+
+    function getHint(guess, target) {
+      let hint = [];
+      if (guess.r > target.r) hint.push("Too much red");
+      else if (guess.r < target.r) hint.push("Not enough red");
+
+      if (guess.g > target.g) hint.push("Too much green");
+      else if (guess.g < target.g) hint.push("Not enough green");
+
+      if (guess.b > target.b) hint.push("Too much blue");
+      else if (guess.b < target.b) hint.push("Not enough blue");
+
+      return hint.join(", ");
+    }
+
+    function makeGuess() {
+      if (tries <= 0) return;
+
+      const userHex = document.getElementById("colorInput").value;
+      const guessRgb = hexToRgb(userHex);
+
+      const distance = colorDistance(guessRgb, targetRgb);
+      tries--;
+
+      if (distance === 0) {
+        document.getElementById("feedback").innerText = `🎉 Correct! The color was ${targetColor}`;
+        document.getElementById("hint").innerText = "";
+        tries = 0;
+      } else {
+        document.getElementById("feedback").innerText =
+          `Distance from target: ${Math.round(distance)}`;
+        let hintText = getHint(guessRgb, targetRgb);
+
+        if (lastDistance !== null) {
+          if (distance < lastDistance) {
+            hintText += " — You're getting closer!";
+          } else {
+            hintText += " — You're getting farther!";
+          }
+        }
+
+        document.getElementById("hint").innerText = hintText;
+
+        if (tries === 0) {
+          document.getElementById("feedback").innerText +=
+            ` 😢 Out of tries! The color was ${targetColor}`;
+        }
+      }
+
+      document.getElementById("guessesLeft").innerText = `Tries left: ${tries}`;
+      lastDistance = distance;
+    }
+
+    function resetGame() {
+      targetColor = getRandomColor();
+      targetRgb = hexToRgb(targetColor);
+      tries = 5;
+      lastDistance = null;
+      document.getElementById("colorBox").style.backgroundColor = targetColor;
+      document.getElementById("feedback").innerText = "";
+      document.getElementById("hint").innerText = "";
+      document.getElementById("guessesLeft").innerText = `Tries left: ${tries}`;
+      document.getElementById("colorInput").value = "#000000";
+    }
+
+    // Initialize on page load
+    resetGame();
+  </script>
+
+</body>
+</html>
